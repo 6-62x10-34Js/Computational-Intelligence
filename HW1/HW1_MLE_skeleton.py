@@ -45,6 +45,9 @@ def main():
     # Estimate the true model parameters via MLE
     ML_param, dist_type = ML_estimation(data)
 
+    ML_exp_param = ML_param[2]
+    ML_gauss_param = ML_param[:2]
+
     # Make histogram plots of the data arrays
     # Make histogram plots of the data arrays as subplots of a single figure
     #
@@ -64,24 +67,24 @@ def main():
     # # Numerical MLE for the Gaussian distributed data
     # # TODO: specify parameters and insert the correct numbers for i and j. Choose reasonable grid boundaries / resolution.
     ML_num_i = ML_numerical_Gauss(data, dist_type)
-    ML_num_i=np.array(ML_num_i)
+    # ML_num_j = ML_numerical_Gauss(dataj,mu_min,mu_max,sigma_sq_min,sigma_sq_max,resolution_mu,resolution_sigma_sq)
+
+    ML_num_i = np.array(ML_num_i)
 
     # # Compute the inverse likelihood ratio for the Gaussian distributed data
-    print(f'{[ML_param[0], ML_param[1]]} gauss')
-    print(f'{ML_num_i} NUM')
-    #calculate_inverse_likelihood_ratio(data, ML_num_i, [ML_param[0], ML_param[1]], dist_type)
+    #calculate_inverse_log_likelihood_ratio(data, ML_num_i, [ML_param[0], ML_param[1]], dist_type)
 
-    # ML_num_j = ML_numerical_Gauss(dataj,mu_min,mu_max,sigma_sq_min,sigma_sq_max,resolution_mu,resolution_sigma_sq)
     #
     # # 2D plot of the joint likelihood function of exponential distributed data
     # # TODO: specify parameters and insert the correct number for k. Choose reasonable grid boundaries / resolution.
-    plot_likelihood_Exp(data)
+
     #
     # # Numerical MLE for the exponential distributed data
     # # TODO: specify parameters and insert the correct number for k. Choose reasonable grid boundaries / resolution.
-    ML_num_k = ML_numerical_Exp(data,lambda_min,lambda_max,resolution_lambda)
-    #
-    #
+
+    #ML_num_k = ML_numerical_Exp(data, dist_type)
+
+    #ML_ana_k = plot_likelihood_Exp(data, dist_type)
     # # 2.3 Bayesian Model Estimation
     # # -----------------------------
     #
@@ -99,7 +102,7 @@ def main():
 def calculate_inverse_log_likelihood_ratio(data, ML_num_i, dist_type, ML_param):
     # Compute the inverse likelihood ratio for the Gaussian distributed data
     for i in range(len(data)):
-        if dist_type[i] == "Gaussian Distribution":
+        if dist_type[i] == "Gaussian":
             mu = ML_param[i][0]
             sigma_sq = ML_param[i][1]
             mu_num = ML_num_i[i][0]
@@ -172,6 +175,8 @@ def ML_estimation(data):
     ml_params = np.empty((len(data), 2))
     dist_type = np.empty(len(data), dtype=object)
 
+    print('Computing MLE for Gaussian and Exponential distributions...')
+
     for i in range(len(data)):
         ks_test = stats.kstest(data[i], stats.expon.pdf(np.arange(0, 4, 0.1), loc=0, scale=2))
         is_exponential = ks_test[1] > hypotheses
@@ -195,7 +200,7 @@ def caluculate_exponential_likelihood(data, lambd):
     likelihood = np.empty(len(lambd))
     for i in range(len(lambd)):
         likelihood[i] = np.prod(lambd[i] * np.exp(-lambd[i] * data))
-    return likelihood, lambd
+    return likelihood
 
 
 def plot_likelihood_Gauss(data, dist_type):
@@ -261,6 +266,7 @@ def ML_numerical_Gauss(data, dist_type):
         max_likelihood_params: list of tuples containing the (µi∗,(σ2i)∗) that maximize the likelihood
     """
     ML_num_Gauss = np.empty((len(data), 2))
+    print('Computing the maximum likelihood parameters numerically for the Gaussian distribution ...')
 
     for i in range(len(data)):
         if dist_type[i] != "Gaussian":
@@ -300,48 +306,52 @@ def ML_numerical_Gauss(data, dist_type):
 
 # --------------------------------------------------------------------------------
 
-def plot_likelihood_Exp(data, lambda_min, lambda_max, resolution_lambda):
+def plot_likelihood_Exp(data, dist_type):
     """ Plots the joint likelihood function for lambda for a given 1-D exponentially distributed data sample on
         a predefined grid.
     
     Input:  data ... an array of 1-dimensional Gaussian distributed data points
-            lambda_min ... lower boundary of the grid on the lambda-axis
-            lambda_max ... upper boundary of the grid on the lambda-axis
-            resolution_lambda ... interval length between discretized points on the lambda-axis
+            dist_type ... an array of strings specifying the distribution type of each data set
+
             
     Output: ---
     """
 
-    # TODO Plot the joint Exponential likelihood w.r.t. lambda on a discretized 1-D grid
+    # TODO Plot the joint Exponential likelihood w.r.t. lambda on a discretized 1-D grid the exponential data or varying lambda values
+
+
+
+    lambda_min = 0
+    lambda_max = 10
+    resolution_lambda = 0.1
+
+    lambda_range = np.arange(lambda_min, lambda_max, resolution_lambda)
+    lambda_grid = np.meshgrid(lambda_range)
+
+
 
     for i in range(len(data)):
+        if dist_type[i] != "Exponential":
+            print(f"Data {i + 1} does not follow an Exponential distribution!")
+        else:
+            likelihood_grid = caluculate_exponential_likelihood(data[i], lambda_grid)
 
-        # Dynamically determine the range of lambda values to plot
-        lambda_min = 0
-        lambda_max = np.max(data[i]) + 1
+            fig = plt.figure(figsize=(8, 8), dpi=80)
+            ax = fig.add_subplot(111)
+            ax.scatter(lambda_grid, likelihood_grid)
+            ax.set_title(f'Exponential likelihood function for data {i + 1}')
+            ax.set_xlabel(f'$\lambda$')
+            ax.set_ylabel('likelihood')
+            plt.show()
 
-        # Create a 1D grid of lambda values
-        lambda_range = np.linspace(lambda_min, lambda_max, 100)
-        lambda_grid = np.meshgrid(lambda_range)
 
-        # Evaluate the likelihood function for each lambda value
-        likelihood_grid = caluculate_exponential_likelihood(data[i], lambda_grid)
-
-        # Create a 2D plot of the likelihood function
-        fig = plt.figure(figsize=(8, 8), dpi=80)
-        ax = fig.add_subplot(111)
-        ax.plot(lambda_grid, likelihood_grid, cmap='viridis', edgecolor='none')
-        ax.set_title(f'Exponential likelihood function for data {i + 1}')
-        ax.set_xlabel(f'$\lambda$')
-        ax.set_ylabel('likelihood')
-        plt.show()
 
     return
 
 
 # --------------------------------------------------------------------------------
 
-def ML_numerical_Exp(data, lambda_min, lambda_max, resolution_lambda):
+def ML_numerical_Exp(data, dist_type):
     """ numerically computes the MLEs for lambda for a given 1-D exponentially distributed data sample on
         a predefined grid.
     
@@ -353,36 +363,68 @@ def ML_numerical_Exp(data, lambda_min, lambda_max, resolution_lambda):
     Output: ML_num_Exp ... the numerical maximum likelihood estimators for mu and sigma^2 for a Gaussian data
                        array
     """
-
-    ML_num_Exp = np.zeros([1, 1])
-
     # TODO Compute the values of the joint exponential likelihood w.r.t. lambda and the data on a discretized 1-D grid
     #      and take the maximizing argument lambda* as the numerical MLE.
 
     # TODO Compute the numerical MLEs for lambda for each data array and store them in the array ML_num_Exp
+    print("Computing numerical MLEs for lambda for each data set...")
 
+    print(dist_type)
+    # Dynamically determine the range of mu and sigma_sq values to plot
     ML_num_Exp = np.zeros([len(data), 1])
+    lambda_min = 0
+    lambda_max = np.max(data) + 1
+    resolution_lambda = 100
 
     for i in range(len(data)):
-        # Dynamically determine the range of lambda values to plot
-        lambda_range = np.linspace(lambda_min, lambda_max, resolution_lambda)
+        if dist_type[i] != "Exponential Distribution":
+            print(f"Data {i + 1} does not follow an Exponential distribution!")
+        else:
+            # Dynamically determine the range of lambda values to plot
+            lambda_range = np.linspace(lambda_min, lambda_max, resolution_lambda)
 
-        # Evaluate the likelihood function for each lambda value
-        likelihood = caluculate_exponential_likelihood(data[i], lambda_range)
+            # Evaluate the likelihood function for each lambda value
+            likelihood = caluculate_exponential_likelihood(data[i], lambda_range)
 
-        # Find the maximum likelihood value and the corresponding lambda value
-        max_likelihood_index = np.argmax(likelihood)
-        max_likelihood_lambda = lambda_range[max_likelihood_index]
+            # Find the maximum likelihood value and the corresponding lambda value
+            max_likelihood_index = np.argmax(likelihood)
+            max_likelihood_lambda = lambda_range[max_likelihood_index]
 
-        # Store the maximum likelihood parameters
-        ML_num_Exp[i] = max_likelihood_lambda
+            # Store the maximum likelihood parameters
+            ML_num_Exp[i] = max_likelihood_lambda
 
-        print(f"Maximum likelihood parameters for data set {i + 1}:")
-        print(f"lambda: {max_likelihood_lambda}")
-        print('---------------------------------')
+            print(f"Numerically determined Maximum likelihood parameters for data set {i + 1}:")
+            print(f"lambda: {max_likelihood_lambda}")
+            print('---------------------------------')
 
     return ML_num_Exp
 
+def plot_and_compare_likelihood_functions_different_lambda(data, dist_type, ML_num_Exp, ML_analytical_Exp):
+
+    lambda_min = 0
+    lambda_max = np.max(data) + 1
+    resolution_lambda = 100
+
+    lambda_range = np.linspace(lambda_min, lambda_max, resolution_lambda)
+    lambda_grid = np.meshgrid(lambda_range)
+
+    for i in range(len(data)):
+        if dist_type[i] != "Exponential Distribution":
+            print(f"Data {i + 1} does not follow an Exponential distribution!")
+        else:
+            likelihood_grid = caluculate_exponential_likelihood(data[i], lambda_grid)
+
+            fig = plt.figure(figsize=(8, 8), dpi=80)
+            ax = fig.add_subplot(111)
+            ax.plot(lambda_grid, likelihood_grid, label='likelihood')
+            ax.axvline(ML_num_Exp[i], color='r', linestyle='--', label='numerical MLE')
+            ax.axvline(ML_analytical_Exp[i], color='g', linestyle='--', label='analytical MLE')
+            ax.set_title(f'Exponential likelihood function for data {i + 1}')
+            ax.set_xlabel(f'$\lambda$')
+            ax.set_ylabel('likelihood')
+            ax.legend()
+            plt.show()
+    return
 
 # --------------------------------------------------------------------------------
 
