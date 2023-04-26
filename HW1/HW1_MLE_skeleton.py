@@ -8,6 +8,8 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import scipy.stats as stats
+import timeit
+
 
 
 # --------------------------------------------------------------------------------
@@ -62,29 +64,24 @@ def main():
     # 3D plots of the joint likelihood functions of the Gaussian distributed data
     # TODO: specify parameters and insert the correct numbers for i and j. Choose reasonable grid boundaries / resolution.
     # plot_likelihood_Gauss(datai,mu_min,mu_max,sigma_sq_min,sigma_sq_max,resolution_mu,resolution_sigma_sq)
-    plot_likelihood_Gauss(data, dist_type)
+    plot_likelihood_Gauss(data, dist_type, ML_param)
     #
     # # Numerical MLE for the Gaussian distributed data
     # # TODO: specify parameters and insert the correct numbers for i and j. Choose reasonable grid boundaries / resolution.
     ML_num_i = ML_numerical_Gauss(data, dist_type)
     # ML_num_j = ML_numerical_Gauss(dataj,mu_min,mu_max,sigma_sq_min,sigma_sq_max,resolution_mu,resolution_sigma_sq)
 
-    ML_num_i = np.array(ML_num_i)
+    #compare numerical and analytical MLE
 
-    # # Compute the inverse likelihood ratio for the Gaussian distributed data
-    #calculate_inverse_log_likelihood_ratio(data, ML_num_i, [ML_param[0], ML_param[1]], dist_type)
-
-    #
-    # # 2D plot of the joint likelihood function of exponential distributed data
     # # TODO: specify parameters and insert the correct number for k. Choose reasonable grid boundaries / resolution.
 
     #
     # # Numerical MLE for the exponential distributed data
     # # TODO: specify parameters and insert the correct number for k. Choose reasonable grid boundaries / resolution.
 
-    #ML_num_k = ML_numerical_Exp(data, dist_type)
+    ML_num_k = ML_numerical_Exp(data, dist_type)
 
-    #ML_ana_k = plot_likelihood_Exp(data, dist_type)
+    ML_ana_k = plot_likelihood_Exp(data, dist_type)
     # # 2.3 Bayesian Model Estimation
     # # -----------------------------
     #
@@ -175,18 +172,34 @@ def ML_estimation(data):
     ml_params = np.empty((len(data), 2))
     dist_type = np.empty(len(data), dtype=object)
 
-    print('Computing MLE for Gaussian and Exponential distributions...')
+    print('Computing analytical MLE for Gaussian and Exponential distributions...')
 
     for i in range(len(data)):
         ks_test = stats.kstest(data[i], stats.expon.pdf(np.arange(0, 4, 0.1), loc=0, scale=2))
         is_exponential = ks_test[1] > hypotheses
+        length = data[i].shape[0]
         dist_type[i] = "Exponential Distribution" if is_exponential else "Gaussian"
         if is_exponential:
-            ml_params[i] = np.array([1 / np.mean(data[i])])
+            start_time_1 = timeit.default_timer()
+            mean = 1 / length * np.sum(data[i])
+            ml_params[i] = np.array([mean])
+            elapsed_1 = timeit.default_timer() - start_time_1
+
+            print(f'Exponential MLE for data {i + 1}: lambda = {mean}')
+            print(f'Elapsed time exponential: {elapsed_1:.8f} seconds')
+            print('----------------------------------------')
 
         else:
-            ml_params[i] = np.array([np.mean(data[i]), np.var(data[i])])
-            print(f'Gaussian MLE for data {i + 1}: mu = {np.mean(data[i])}, sigma^2 = {np.var(data[i])}')
+            start_time_2 = timeit.default_timer()
+            mean = 1 / length * np.sum(data[i])
+            variance = 1 / length * np.sum((data[i] - mean) ** 2)
+            ml_params[i] = np.array([mean,variance])
+            elapsed_2 = timeit.default_timer() - start_time_2
+
+            print(f'Gaussian MLE for data {i + 1}: mu = {mean}, sigma^2 = {variance}')
+            print(f'Elapsed time Gaussian: {elapsed_2:.8f} seconds')
+            print('----------------------------------------')
+
 
     return ml_params, dist_type
 
@@ -203,7 +216,7 @@ def caluculate_exponential_likelihood(data, lambd):
     return likelihood
 
 
-def plot_likelihood_Gauss(data, dist_type):
+def plot_likelihood_Gauss(data, dist_type, ML_param):
     """ Plots the joint likelihood function for mu and sigma^2 for a given 1-D Gaussian data sample on
         a predefined grid.
     
@@ -213,6 +226,7 @@ def plot_likelihood_Gauss(data, dist_type):
             sigma_sq_min ... lower boundary of the grid on the sigma^2-axis
             sigma_sq_max ... upper boundary of the grid on the sigma^2-axis
             resolution_mu ... interval length between discretized points on the mu-axis
+            ML_param ... the values of the maximum likelihood estimators for all parameters
             
             resolution_sigma_sq ... interval length between discretized points on the sigma^2-axis
     Output: ---
@@ -237,6 +251,32 @@ def plot_likelihood_Gauss(data, dist_type):
             # Evaluate the likelihood function for each pair of mu and sigma_sq values
             likelihood_grid = calcualate_gauss_likelihood(data[i], mu_grid, sigma_sq_grid)
 
+            # Evaluate the likelihood function for each pair of mu and sigma_sq values contained in ML_param
+            mu_ML = ML_param[i][0]
+            sigma_sq_ML = ML_param[i][1]
+
+            # Plot the likelihood function
+            fig = plt.figure(figsize=(8, 8), dpi=80)
+            ax = fig.add_subplot(111)
+            if i == 0:
+                # show zoomed in plot for first data set
+                im = ax.imshow(likelihood_grid, cmap='viridis', extent=[mu_ML - 0.5, mu_ML + 0.5,sigma_sq_ML - 0.5, sigma_sq_ML + 0.5])
+
+                ax.set_xlim([mu_ML - 0.5, mu_ML + 0.5])
+                ax.set_ylim([sigma_sq_ML - 0.5, sigma_sq_ML + 0.5])
+            else:
+                im = ax.imshow(likelihood_grid, cmap='viridis', extent=[mu_min, mu_max, sigma_sq_min, sigma_sq_max])
+            ax.set_title(f'Gaussian likelihood function for data {i + 1}')
+            fig.colorbar(im, orientation='vertical')
+            ax.set_xlabel(f'$\mu$')
+            ax.set_ylabel(f'$\sigma^2$')
+            ax.scatter(mu_ML, sigma_sq_ML, c='r', marker='x', label='Estimated parameters:' +'\n'+ '$\mu_{ml}$' + f'= {mu_ML:.2f}' +'\n'+ '$\sigma_{ml}$' + f'= {sigma_sq_ML:.2f}')
+            ax.legend(loc = 'lower left')
+            plt.savefig(f'Gaussian_likelihood_data_{i + 1}_MLE.png')
+
+            plt.show()
+
+
             # Create a 3D plot of the likelihood function
             fig = plt.figure(figsize=(8, 8), dpi=80)
             ax = fig.add_subplot(111, projection='3d')
@@ -245,6 +285,8 @@ def plot_likelihood_Gauss(data, dist_type):
             ax.set_xlabel(f'$\mu$')
             ax.set_ylabel(f'$\sigma^2$')
             ax.set_zlabel('likelihood')
+            plt.savefig(f'Gaussian_likelihood_data_{i + 1}.png')
+
             plt.show()
     return
 
@@ -256,15 +298,11 @@ def ML_numerical_Gauss(data, dist_type):
     for each data set
     Input:
         data: list of 1D arrays of data
-        mu_min: lower boundary of the grid on the mu-axis
-        mu_max: upper boundary of the grid on the mu-axis
-        sigma_sq_min: lower boundary of the grid on the sigma^2-axis
-        sigma_sq_max: upper boundary of the grid on the sigma^2-axis
-        resolution_mu: interval length between discretized points on the mu-axis
-        resolution_sigma_sq: interval length between discretized points on the sigma^2-axis
+        dist_type: list of strings containing the distribution type for each data set
     Output:
         max_likelihood_params: list of tuples containing the (µi∗,(σ2i)∗) that maximize the likelihood
     """
+
     ML_num_Gauss = np.empty((len(data), 2))
     print('Computing the maximum likelihood parameters numerically for the Gaussian distribution ...')
 
@@ -272,34 +310,43 @@ def ML_numerical_Gauss(data, dist_type):
         if dist_type[i] != "Gaussian":
             print(f"Data {i + 1} does not follow a Gaussian distribution!")
         else:
-            # Dynamically determine the range of mu and sigma_sq values to plot
-            mu_min = np.min(data[i]) - 1
-            mu_max = np.max(data[i]) + 1
-            sigma_sq_min = 1e-6
-            sigma_sq_max = np.var(data[i]) * 5
+            start_time = timeit.default_timer()
 
-            # Create a 2D grid of mu and sigma_sq values
-            mu_range = np.linspace(mu_min, mu_max, 100)
-            sigma_sq_range = np.linspace(sigma_sq_min, sigma_sq_max, 100)
-            mu_grid, sigma_sq_grid = np.meshgrid(mu_range, sigma_sq_range)
+            # use newton-raphson method to find the maximum likelihood parameters
+            max_iter = 1000
+            mu = np.mean(data[i])
+            sigma_sq = np.var(data[i])
+            tol = 1e-6
+            for j in range(max_iter):
+                # calculate the gradient of the likelihood function
+                grad_mu = np.sum((data[i] - mu) / sigma_sq)
+                grad_sigma_sq = np.sum((data[i] - mu) ** 2 / sigma_sq ** 2 - 1 / sigma_sq)
 
-            # Evaluate the likelihood function for each pair of mu and sigma_sq values
-            likelihood_grid = calcualate_gauss_likelihood(data[i], mu_grid, sigma_sq_grid)
+                # calculate the hessian of the likelihood function
+                hess_mu = -np.sum(1 / sigma_sq)
+                hess_sigma_sq = -np.sum(2 * (data[i] - mu) ** 2 / sigma_sq ** 3)
+                hess_mu_sigma_sq = -np.sum(2 * (data[i] - mu) / sigma_sq ** 2)
 
-            # Find the maximum likelihood value and the corresponding mu and sigma_sq values
-            max_likelihood = np.max(likelihood_grid)
-            max_likelihood_index = np.argmax(likelihood_grid)
-            max_likelihood_mu = mu_grid.flatten()[max_likelihood_index]
-            max_likelihood_sigma_sq = sigma_sq_grid.flatten()[max_likelihood_index]
+                # calculate the inverse of the hessian
+                det_hess = hess_mu * hess_sigma_sq - hess_mu_sigma_sq ** 2
+                inv_hess = np.array([[hess_sigma_sq, -hess_mu_sigma_sq], [-hess_mu_sigma_sq, hess_mu]]) / det_hess
 
-            # Store the maximum likelihood parameters
-            ML_num_Gauss[i, 0] = max_likelihood_mu
-            ML_num_Gauss[i, 1] = max_likelihood_sigma_sq
+                # calculate the update
+                update = -np.dot(inv_hess, np.array([grad_mu, grad_sigma_sq]))
 
-            print(f"Maximum likelihood parameters for data set {i + 1}:")
-            print(f"mu: {max_likelihood_mu}")
-            print(f"sigma^2: {max_likelihood_sigma_sq}")
-            print('---------------------------------')
+                # update the parameters
+                mu += update[0]
+                sigma_sq += update[1]
+
+                # check if the update is smaller than the tolerance
+                if np.linalg.norm(update) < tol:
+
+                    break
+
+            print(f"Numerical Maximum likelihood parameters for data {i + 1}: mu = {mu:.4f}, sigma_sq = {sigma_sq:.4f}")
+            end_time = timeit.default_timer()
+            print(
+                f'Time needed for numerical maximum likelihood estimation: {end_time - start_time:.8f} seconds')
 
     return ML_num_Gauss
 
@@ -326,14 +373,14 @@ def plot_likelihood_Exp(data, dist_type):
     resolution_lambda = 0.1
 
     lambda_range = np.arange(lambda_min, lambda_max, resolution_lambda)
-    lambda_grid = np.meshgrid(lambda_range)
 
 
 
     for i in range(len(data)):
-        if dist_type[i] != "Exponential":
+        if dist_type[i] != "Exponential Distribution":
             print(f"Data {i + 1} does not follow an Exponential distribution!")
         else:
+            lambda_grid = np.linspace(lambda_min, lambda_max, 100)
             likelihood_grid = caluculate_exponential_likelihood(data[i], lambda_grid)
 
             fig = plt.figure(figsize=(8, 8), dpi=80)
@@ -356,46 +403,53 @@ def ML_numerical_Exp(data, dist_type):
         a predefined grid.
     
     Input:  data ... an array of 1-dimensional exponentially distributed data points
-            lambda_min ... lower boundary of the grid on the lambda-axis
-            lambda_max ... upper boundary of the grid on the lambda-axis
-            resolution_lambda ... interval length between discretized points on the lambda-axis
-            
+            dist_type ... an array of strings specifying the distribution type of each data set
+
     Output: ML_num_Exp ... the numerical maximum likelihood estimators for mu and sigma^2 for a Gaussian data
                        array
     """
     # TODO Compute the values of the joint exponential likelihood w.r.t. lambda and the data on a discretized 1-D grid
     #      and take the maximizing argument lambda* as the numerical MLE.
 
-    # TODO Compute the numerical MLEs for lambda for each data array and store them in the array ML_num_Exp
+
     print("Computing numerical MLEs for lambda for each data set...")
 
     print(dist_type)
-    # Dynamically determine the range of mu and sigma_sq values to plot
     ML_num_Exp = np.zeros([len(data), 1])
-    lambda_min = 0
-    lambda_max = np.max(data) + 1
-    resolution_lambda = 100
 
     for i in range(len(data)):
         if dist_type[i] != "Exponential Distribution":
             print(f"Data {i + 1} does not follow an Exponential distribution!")
         else:
-            # Dynamically determine the range of lambda values to plot
-            lambda_range = np.linspace(lambda_min, lambda_max, resolution_lambda)
+            #use newton-raphson method to find the maximum likelihood parameters
+            max_iter = 1000
+            lambda_ = np.mean(data[i])
+            tol = 1e-6
+            start_time_4 = timeit.default_timer()
+            for j in range(max_iter):
+                #calculate the gradient of the likelihood function
+                grad_lambda = np.sum(data[i] / lambda_ - 1)
 
-            # Evaluate the likelihood function for each lambda value
-            likelihood = caluculate_exponential_likelihood(data[i], lambda_range)
+                #calculate the hessian of the likelihood function
+                hess_lambda = -np.sum(data[i] / lambda_ ** 2)
 
-            # Find the maximum likelihood value and the corresponding lambda value
-            max_likelihood_index = np.argmax(likelihood)
-            max_likelihood_lambda = lambda_range[max_likelihood_index]
+                #calculate the inverse of the hessian
+                inv_hess = 1 / hess_lambda
 
-            # Store the maximum likelihood parameters
-            ML_num_Exp[i] = max_likelihood_lambda
+                #calculate the update
+                update = -grad_lambda * inv_hess
 
-            print(f"Numerically determined Maximum likelihood parameters for data set {i + 1}:")
-            print(f"lambda: {max_likelihood_lambda}")
-            print('---------------------------------')
+                #update the parameters
+                lambda_ += update
+
+                #check if the update is smaller than the tolerance
+                if np.abs(update) < tol:
+                    break
+
+            print(f'Numeric likelihood function for data {i + 1}: lambda = {lambda_}')
+            ML_num_Exp[i] = lambda_
+            end_time_4 = timeit.default_timer()
+            print(f'Time needed for numerical exponential maximum likelihood estimation: {end_time_4 - start_time_4:.8f} seconds')
 
     return ML_num_Exp
 
