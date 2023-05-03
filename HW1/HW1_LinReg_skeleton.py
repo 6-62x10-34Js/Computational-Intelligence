@@ -50,7 +50,7 @@ def main():
 
     # Repeat the tasks from the first two steps (with the original roles of training and test data again), 
     # but now by make use of the regularized cost function:
-    lambda_reg = 0.01
+    lambda_reg = 1
 
     # Fit polynomials of degree D in {1,2,...,20} to the training data.
     w_train_reg_D = opt_weight_reg(data_train, Phi_train_D, lambda_reg)
