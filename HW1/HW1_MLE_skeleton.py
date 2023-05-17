@@ -181,11 +181,11 @@ def ML_estimation(data):
         dist_type[i] = "Exponential Distribution" if is_exponential else "Gaussian"
         if is_exponential:
             start_time_1 = timeit.default_timer()
-            mean = 1 / length * np.sum(data[i])
-            ml_params[i] = np.array([mean])
+            mean = sum(data[i]) / length
+            ml_params[i] = np.array([1/mean])
             elapsed_1 = timeit.default_timer() - start_time_1
 
-            print(f'Exponential MLE for data {i + 1}: lambda = {mean}')
+            print(f'Exponential MLE for data {i + 1}: lambda = {ml_params[i][0]}')
             print(f'Elapsed time exponential: {elapsed_1:.8f} seconds')
             print('----------------------------------------')
 
@@ -206,6 +206,7 @@ def ML_estimation(data):
 
 # --------------------------------------------------------------------------------
 def calcualate_gauss_likelihood(data, mu, sigma_sq):
+
     likelihood = (1 / np.sqrt(2 * np.pi * sigma_sq)) * np.exp(-0.5 * ((data - mu) ** 2 / sigma_sq))
     return likelihood
 
@@ -501,7 +502,20 @@ def posterior_mean_Gauss(data, mu_prior, mu_ML, sigma_sq_prior, sigma_sq_true):
 
     return posterior_param_Gauss
 
+def plot_known_exponential_function_over_data(data, dist_type, ML_analytical_Exp):
+    """ plots the known exponential distribution over the data
 
+    Input:  data ... an array of 1-dimensional exponentially distributed data points
+            dist_type ... an array of strings specifying the distribution type of each data set
+            ML_analytical_Exp ... the analytical maximum likelihood estimators for lambda for an exponential data
+                                  array
+
+    Output: ---
+    """
+
+    # TODO Plot the known exponential distribution over the data
+
+    return
 # --------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------
