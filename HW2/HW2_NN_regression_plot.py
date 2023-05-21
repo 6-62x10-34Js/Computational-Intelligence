@@ -18,6 +18,7 @@ def plot_mse_vs_neurons(train_mses, test_mses, n_hidden_neurons_list):
     :param n_hidden_neurons_list: List containing number of hidden neurons
     :return:
     """
+
     plt.figure(figsize=(10, 7))
     plt.title("Variation of testing and training MSE with number of neurons in the hidden layer")
 
@@ -25,15 +26,19 @@ def plot_mse_vs_neurons(train_mses, test_mses, n_hidden_neurons_list):
         m = data.mean(axis=1)
         s = data.std(axis=1)
 
-        plt.plot(n_hidden_neurons_list, m, 'o', linestyle='-', label=name, color=color)
         plt.fill_between(n_hidden_neurons_list, m - s, m + s, color=color, alpha=.2)
-    plt.ylim(0, 4)
 
+        plt.plot(n_hidden_neurons_list, m, 'o', linestyle='-', label=name, color=color)
+
+
+    plt.ylim(0, 4)
     plt.xlabel("Number of neurons in the hidden layer")
     plt.ylabel("MSE")
-    # plt.semilogx()
+    plt.savefig("plots/mse_vs_neurons.png")
+    plt.semilogx()
     plt.legend()
     plt.show()
+
 
 
 def plot_mse_vs_iterations(train_mses, test_mses, n_iterations, hidden_neuron_list):
@@ -103,6 +108,8 @@ def plot_learned_function(n_hidden, x_train, y_train, y_pred_train, x_test, y_te
     :param y_pred_test:  array of size as y_test, but representing the estimator prediction
     :return:
     """
+
+
     plt.figure(figsize=(10, 7))
 
     ax = plt.subplot()
@@ -114,6 +121,6 @@ def plot_learned_function(n_hidden, x_train, y_train, y_pred_train, x_test, y_te
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set(ylim=[-5, 5])
-
+    plt.savefig("plots/learned_function_{}.png".format(n_hidden))
     plt.legend()
     plt.show()

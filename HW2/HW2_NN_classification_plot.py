@@ -80,5 +80,6 @@ def plot_boxplot(train_acc, test_acc):
     ax_list[1].set_title("Boxplot of testing accuracy")
     ax_list[1].boxplot(test_acc)
     ax_list[1].set_ylabel('Accuracy')
+    plt.savefig('plots/boxplot.png')
     plt.show()
 
