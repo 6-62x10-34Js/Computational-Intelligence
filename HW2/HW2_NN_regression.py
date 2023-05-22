@@ -51,7 +51,7 @@ def ex_3_1_a(x_train, x_test, y_train, y_test):
     """
 
     random_state = [np.random.randint(1, 100) for _ in range(10)]
-    n_hidden_neurons_list = [2, 5, 10, 20, 50]
+    n_hidden_neurons_list = [2, 5, 50]
     train_mses = np.zeros((len(n_hidden_neurons_list), len(random_state)))
     test_mses = np.zeros((len(n_hidden_neurons_list), len(random_state)))
     scores = np.zeros((len(n_hidden_neurons_list), len(random_state)))
@@ -81,8 +81,13 @@ def ex_3_1_a(x_train, x_test, y_train, y_test):
             results['train_mses'][n_hidden_neurons_list.index(n_neurons), :] = mse_train
             results['test_mses'][n_hidden_neurons_list.index(n_neurons), :] = mse_test
             results['scores'][n_hidden_neurons_list.index(n_neurons), :] = score
+            plot_learned_function(n_neurons, x_train, y_train, model.predict(x_train), x_test, y_test, model.predict(x_test))
 
-    #plot_mse_vs_neurons(results['train_mses'], results['test_mses'], n_hidden_neurons_list)
+    print('-------------------Results_3.1.a-------------------')
+    print('Scores')
+    print(scores)
+
+    plot_mse_vs_neurons(results['train_mses'], results['test_mses'], n_hidden_neurons_list)
 
     return
 
@@ -129,7 +134,7 @@ def ex_3_1_b(x_train, x_test, y_train, y_test):
 
 
 
-    print('-------------------Results-------------------')
+    print('-------------------Results_ex_3_1_b-------------------')
     print(f'Max Train MSE: {np.max(train_mses)}')
     print(f'Min Train MSE: {np.min(train_mses):.4f}')
     print(f'Mean Train MSE: {np.mean(train_mses):.4f}')
@@ -200,6 +205,8 @@ def ex_3_1_c(x_train, x_test, y_train, y_test):
     # search for n_neurons with the lowest mse
     min_test_mse_index = np.unravel_index(test_mses.argmin(), test_mses.shape)
     b_best_hidden_neurons = n_hidden_neurons_list[min_test_mse_index[0]]
+    print('-------------------Results_ex_3_1_c-------------------')
+    print(f"Best number of hidden neurons: {b_best_hidden_neurons}")
 
 
     plot_learned_function(b_best_hidden_neurons, x_train, y_train, y_pred_train_array, x_test, y_test, y_pred_test_array)

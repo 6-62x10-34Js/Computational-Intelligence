@@ -12,7 +12,7 @@ This file contains functions for plotting.
 IMAGE_DIM = (28, 28)
 
 
-def plot_image(image_matrix):
+def plot_image(image_matrix, image_1_classified_as, image_1_actual):
     """
     Plots a single image
     :param image_matrix: 2-D matrix of dimensions IMAGE_DIM
@@ -20,9 +20,11 @@ def plot_image(image_matrix):
     """
     ax = plt.subplot()
     # Rotate the image the right way using .T
-    ax.imshow(image_matrix.reshape(*IMAGE_DIM).T, cmap=plt.cm.gray)
+    ax.imshow(image_matrix.reshape(*IMAGE_DIM).T,k cmap=plt.cm.gray)
+    ax.set_title("Image classified as:" + str(image_1_classified_as) + " Actual:" + str(image_1_actual))
     ax.set_xticks(())
     ax.set_yticks(())
+    #plt.savefig(f'{image_1_classified_as}_{image_1_actual}_b.png')
     plt.show()
 
 
@@ -52,7 +54,7 @@ def plot_hidden_layer_weights(hidden_layer_weights, max_plot=10):
     :return:
     """
     k_plot = min(hidden_layer_weights.shape[1], max_plot)
-    fig, ax_list = plt.subplots(1, k_plot, figsize=(10, 5))
+    fig, ax_list = plt.subplots(1, k_plot, figsize=(9, 3))
     for hidden_neuron_num in range(k_plot):
         ax = ax_list[hidden_neuron_num]
         vmin, vmax = hidden_layer_weights.min(), hidden_layer_weights.max()
@@ -62,6 +64,7 @@ def plot_hidden_layer_weights(hidden_layer_weights, max_plot=10):
             ax.set_title('Feature of hidden units')
         ax.set_xticks(())
         ax.set_yticks(())
+
     plt.show()
 
 
@@ -80,6 +83,7 @@ def plot_boxplot(train_acc, test_acc):
     ax_list[1].set_title("Boxplot of testing accuracy")
     ax_list[1].boxplot(test_acc)
     ax_list[1].set_ylabel('Accuracy')
+    plt.legend()
     plt.savefig('plots/boxplot.png')
     plt.show()
 

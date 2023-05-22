@@ -67,6 +67,7 @@ def plot_mse_vs_iterations(train_mses, test_mses, n_iterations, hidden_neuron_li
     plt.xlabel("Number of iterations")
     plt.ylabel("MSE")
     plt.minorticks_on()
+    plt.savefig("plots/mse_vs_iterations.png")
     plt.show()
 
 

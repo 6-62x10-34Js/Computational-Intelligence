@@ -41,9 +41,11 @@ def main():
     X_train, y_train = load_mnist('data', kind='train')
     X_test, y_test = load_mnist('data', kind='t10k')
 
-    ## Plot some random images
-    plot_random_images(X_train)
-    ## End plot some random images
+    print('Training data shape: ', X_train.shape)
+    print('Training labels shape: ', y_train.shape)
+    print('Test data shape: ', X_test.shape)
+    print('Test labels shape: ', y_test.shape)
+
 
     ## 3.2
     ex_3_2(X_train, y_train, X_test, y_test)

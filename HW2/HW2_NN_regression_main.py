@@ -47,10 +47,10 @@ def main():
         data['x_train'], data['x_test'], data['y_train'].ravel(), data['y_test'].ravel()
 
     ## 3.1 a)
-    ex_3_1_a(x_train, x_test, y_train, y_test)
+    #ex_3_1_a(x_train, x_test, y_train, y_test)
 
     # 3.1 b)
-    ex_3_1_b(x_train, x_test, y_train, y_test)
+    #ex_3_1_b(x_train, x_test, y_train, y_test)
 
     # 3.1 c)
     ex_3_1_c(x_train, x_test, y_train, y_test)
