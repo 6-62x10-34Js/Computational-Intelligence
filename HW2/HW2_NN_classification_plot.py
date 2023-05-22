@@ -20,7 +20,7 @@ def plot_image(image_matrix, image_1_classified_as, image_1_actual):
     """
     ax = plt.subplot()
     # Rotate the image the right way using .T
-    ax.imshow(image_matrix.reshape(*IMAGE_DIM).T,k cmap=plt.cm.gray)
+    ax.imshow(image_matrix.reshape(*IMAGE_DIM).T, cmap=plt.cm.gray)
     ax.set_title("Image classified as:" + str(image_1_classified_as) + " Actual:" + str(image_1_actual))
     ax.set_xticks(())
     ax.set_yticks(())
