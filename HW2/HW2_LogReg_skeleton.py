@@ -26,52 +26,84 @@ def main():
 
     # Fit logistic models with 2D mononomial feature transformations of degree D=1, D=2 and D=3 to the training data.
     # TODO: D = 1,2,3 apply gradient descent to fit the models
+    for D in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+        eta = 0.5
+        max_iter = 2000
+        epsilon = 10 ** (-3)
 
-    D = [1, 2, 3]
-    eta = 0.5
-    max_iter = 2000
-    epsilon = 10 ** (-3)
-    for i in D:
-        def E_tilde(w):
-            return cross_entropy_error(w, data_training, D[i])
+        w0 = np.zeros(sum(range(D + 2)))
 
-        def gradient_E_tilde(w):
-            return gradient_cross_entropy(w, data_training, D[i])
+        def E_tilde(w): return cross_entropy_error(w, data_training, D)
 
-        # TODO: adapt length of model parameter vector to D.
-        if i == 1:
-            w0 = np.zeros(3)
-        elif i == 2:
-            w0 = np.zeros(6)
-        elif i == 3:
-            w0 = np.zeros(10)
+        def gradient_E_tilde(w): return gradient_cross_entropy(w, data_training, D)
 
         w_star, iterations, errors = gradient_descent(E_tilde, gradient_E_tilde, w0, eta, max_iter, epsilon)
 
         # TODO: plot errors (i.e., values of E(w)) against iterations for D = 1,2,3
+        plt.figure()
+        plt.plot(errors)
+        plt.ylabel('E(w)')
+        plt.xlabel('Iterations')
+        plt.title('Errors D: {}'.format(D))
+        plt.show()
 
         # TODO: Choose different values for the step size eta and discuss the impact on the convergence behavior (D = 1,2,3)
 
         # TODO: plot the decision boundaries for your models on both training and test data (D = 1,2,3)
 
+        Plot_Decision_Boundary(data_training, w_star, D, 'Decision Boundary Train D: {}'.format(D))
+        Plot_Decision_Boundary(data_test, w_star, D, 'Decision Boundary Test D: {}'.format(D))
+
         # TODO: Compute the percentage of correctly classified points for training and test data (D = 1,2,3)
 
-        # TODO: fit models for D = 1,2,...,10 to the data and compute the model errors on training and test set
+        phi_train = design_matrix_logreg_2D(data_training, D)
+        phi_test = design_matrix_logreg_2D(data_test, D)
+
+        y_log_train = Y_predict(w_star, phi_train)
+        y_log_test = Y_predict(w_star, phi_test)
+        Z_train = y_log_train > .5
+        Z_test = y_log_test > .5
+        N_train = np.size(data_training, 0)
+        Percent_train = np.sum(Z_train == data_training[:, 2]) / N_train
+        N_test = np.size(data_test, 0)
+        Percent_test = np.sum(Z_test == data_test[:, 2]) / N_test
+
+        print("D: {}; Percent_train: {}; Percent_test: {}".format(D, Percent_train, Percent_test))
+    # TODO: fit models for D = 1,2,...,10 to the data and compute the model errors on training and test set
+
+    # TODO: plot number of required model parameters against D (find an analytical expression)
+    D_values = range(1, 10 + 1)
+    Num_param = [sum(range(D + 2)) for D in D_values]
+
+    plt.figure()
+    plt.plot(D_values, Num_param)
+    plt.ylabel('# of Model Parameters')
+    plt.xlabel('Degree')
+    plt.title('Required model parameters')
+    plt.show()
+
+    # 2.2 Newton-Raphson algorithm
+    # ----------------------------------------------
+
+    # Compare the convergence behavior of the Newton-Raphson algorithm to gradient descent
+    for D in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         eta = 0.5
+        max_iter = 2000
+        epsilon = 10 ** (-3)
 
-        # TODO: plot number of required model parameters against D (find an analytical expression)
+        w0 = np.zeros(sum(range(D + 2)))
 
-        # 2.2 Newton-Raphson algorithm
-        # ----------------------------------------------
-
-        # Compare the convergence behavior of the Newton-Raphson algorithm to gradient descent
-        eta = 0.5
-
-        def Hessian_E_tilde(w):
-            return Hessian_cross_entropy(w, data_training, D[i])
+        def Hessian_E_tilde(w): return Hessian_cross_entropy(w, data_training, D)
 
         w_star, iterations, errors = Newton_Raphson(E_tilde, gradient_E_tilde, Hessian_E_tilde, w0, 1, max_iter,
                                                     epsilon)
+
+        plt.figure()
+        plt.plot(errors)
+        plt.ylabel('E(w)')
+        plt.xlabel('Iterations')
+        plt.title('Errors Newton Raphson D: {}'.format(D))
+        plt.show()
 
     pass
 
@@ -90,7 +122,6 @@ def sigmoid(x):
     """
 
     # TODO: implement sigmoid function
-
     y = 1 / (1 + np.exp(-x))
 
     return y
@@ -106,16 +137,17 @@ def design_matrix_logreg_2D(data, degree):
 
     Output: Phi ... the design matrix
     """
-
     # TODO: compute the design matrix for 2 features and 2D monomial basis functions
-
-    features = data[:, 0:2]
-    N = len(data)
+    x1 = data[:, 0]
+    x2 = data[:, 1]
+    D = degree
+    N = np.size(data, 0)
     Phi = np.ones((N, 1))
-
-    for i in range(1, degree + 1):
-        for j in range(0, i + 1):
-            Phi = np.hstack((Phi, (features[:, 0] ** (i - j)) * (features[:, 1] ** j)))
+    for i_D in range(1, D + 1):
+        for d1 in range(i_D, -1, -1):
+            d2 = i_D - d1
+            Phi_elem = x1 ** d1 * x2 ** d2
+            Phi = np.append(Phi, np.asmatrix(Phi_elem).T, axis=1)
 
     return Phi
 
@@ -136,19 +168,18 @@ def cross_entropy_error(w, data, degree):
 
     # TODO: implement cross entropy error function for 2 features.
     #       You will have to call the function design_matrix_logreg_2D inside this definition.
+    phi = design_matrix_logreg_2D(data, degree)
+    tn = data[:, 2]
+    # for i in range(1,np.size(data,1)+1)
+
+    y_log = Y_predict(w, phi)
+    N = np.size(data, 0)
+    eps = 1e-10
+    cross_entropy_error = (-1 / N) * np.sum(np.multiply(tn, np.log(y_log + eps)) + (1 - tn) * np.log(1 - y_log + eps))
 
     # WARNING: If you run into numerical instabilities /overflow during the exercise this could be
     #          due to the usage log(x) with x very close to 0. Hint: replace log(x) with log(x + epsilon)
     #          with epsilon a very small number like or 1e-10.
-    design_matrix = design_matrix_logreg_2D(data, degree)
-    N = len(data)
-    epsilon = 1e-10
-
-    for i in range(0, N):
-        cross_entropy_error += data[i, 2] * np.log(sigmoid(np.dot(w.T, design_matrix[i, :])) + epsilon) + (
-                1 - data[i, 2]) * np.log(1 - sigmoid(np.dot(w.T, design_matrix[i, :])) + epsilon)
-
-    cross_entropy_error = -cross_entropy_error
 
     return cross_entropy_error
 
@@ -165,18 +196,15 @@ def gradient_cross_entropy(w, data, degree):
     Output: gradient_cross_entropy ... gradient of the cross-entropy error function \tilde{E}(w)
     """
 
-    gradient_cross_entropy = np.ones((len(w), 1))
+    # gradient_cross_entropy = np.ones((len(w),1))
+    N = np.size(data, 0)
+    phi = design_matrix_logreg_2D(data, degree)
+    y_log = Y_predict(w, phi)
+    tn = data[:, 2]
+    gradient_cross_entropy = np.squeeze(np.asarray((-1 / N) * np.sum((tn - y_log) * phi, axis=0)))
 
     # TODO: implement gradient of the cross entropy error function for 2 features.
     #       You will have to call the function design_matrix_logreg_2D inside this definition.
-
-    design_matrix = design_matrix_logreg_2D(data, degree)
-    N = len(data)
-
-    for i in range(0, N):
-        gradient_cross_entropy += (data[i, 2] - sigmoid(np.dot(w.T, design_matrix[i, :]))) * design_matrix[i, :].reshape(len(w), 1)
-
-    gradient_cross_entropy = -gradient_cross_entropy
 
     return gradient_cross_entropy
 
@@ -193,10 +221,15 @@ def Hessian_cross_entropy(w, data, degree):
     Output: Hessian_cross_entropy ... Hesse matrix of the cross-entropy error function \tilde{E}(w)
     """
 
-    Hessian_cross_entropy = np.ones((len(w), len(w)))
-
     # TODO: implement Hesse matrix of the cross entropy error function for 2 features.
     #       You will have to call the function design_matrix_logreg_2D inside this definition.
+
+    phi = design_matrix_logreg_2D(data, degree)
+    y_log = Y_predict(w, phi)
+    N = np.size(data, 0)
+    Hessian_cross_entropy = np.zeros((len(w), len(w)))
+    for i in range(0, N):
+        Hessian_cross_entropy += (1 / N) * y_log[i] * (1 - y_log[i]) * phi[i, :].T * phi[i, :]
 
     return Hessian_cross_entropy
 
@@ -223,15 +256,14 @@ def gradient_descent(fct, grad, w0, eta, max_iter, epsilon):
     iterations = 0
     values = np.array([])
 
-    # TODO: implement the gradient descent algorithm
-    gradient = grad(w_star)
-    values = np.append(values, fct(w_star))
-
-    while np.linalg.norm(gradient) > epsilon and iterations < max_iter:
-        w_star = w_star - eta * gradient
-        gradient = grad(w_star)
+    for iteration in range(max_iter):
+        w_star = w_star - eta * grad(w_star)
+        iterations = iteration + 1
         values = np.append(values, fct(w_star))
-        iterations += 1
+        if np.linalg.norm(grad(w_star)) < epsilon:
+            break
+
+            # TODO: implement the gradient descent algorithm
 
     return w_star, iterations, values
 
@@ -254,17 +286,59 @@ def Newton_Raphson(fct, grad, Hessian, w0, eta, max_iter, epsilon):
             iterations ... number of iterations performed by gradient descent
             values ... values of the function to be minimized at all iterations
     """
+    # TODO: implement the Newton-Raphson algorithm
 
     w_star = w0
     iterations = 0
     values = np.array([])
 
-    # TODO: implement the Newton-Raphson algorithm
+    for iteration in range(max_iter):
+        w_star = w_star - eta * np.squeeze(
+            np.asarray(np.linalg.pinv(Hessian(w_star)) @ grad(w_star).reshape((len(w_star), 1))))
+        iterations = iteration + 1
+        values = np.append(values, fct(w_star))
+        if np.linalg.norm(grad(w_star)) < epsilon:
+            break
 
     return w_star, iterations, values
 
 
 # --------------------------------------------------------------------------------
+def Plot_Decision_Boundary(X, w, degree, title):
+    h = .02
+
+    f1_min, f1_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+    f2_min, f2_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+    ff1, ff2 = np.meshgrid(np.arange(f1_min, f1_max, h), np.arange(f2_min, f2_max, h))
+
+    data = np.c_[ff1.ravel(), ff2.ravel()]
+    phi = design_matrix_logreg_2D(data, degree)
+    y_log = Y_predict(w, phi)
+
+    Z = y_log < .5
+
+    # Put the result into a color plot
+
+    Z = Z.reshape(ff1.shape)
+    plt.figure(1, figsize=(10, 10))
+    plt.contourf(ff1, ff2, Z, cmap=cm.RdBu, alpha=.5)
+    plt.contour(ff1, ff2, Z, colors=['k'], linestyles=['--'], levels=[0.5])
+
+    # Add the training data points
+    plt.scatter(X[:, 0], X[:, 1], c=X[:, 2], edgecolors='k', cmap=cm.jet, alpha=0.8)
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.title(title)
+
+    plt.show()
+
+
+# --------------------------------------------------------------------------------
+def Y_predict(w, phi):
+    y_log = np.squeeze(np.asarray(sigmoid(np.asmatrix(w) @ phi.T)).T)
+    return y_log
+
+
 # --------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
