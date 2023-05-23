@@ -51,6 +51,10 @@ def main():
 
     # 3.1 b)
     #ex_3_1_b(x_train, x_test, y_train, y_test)
+    print(x_train.shape)
+    print(y_train.shape)
+    print(x_test.shape)
+    print(y_test.shape)
 
     # 3.1 c)
     ex_3_1_c(x_train, x_test, y_train, y_test)
